@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claim the Sky Character Sheets</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div>
+            <p class="eyebrow">Cypher RPG</p>
+            <h1>Claim the Sky</h1>
+            <p class="subtitle">Character sheets that work offline and stay on your device.</p>
+          </div>
+          <div class="sidebar-actions">
+            <button id="new-sheet-btn" type="button">New Character</button>
+            <button id="import-btn" type="button">Import JSON</button>
+            <input id="import-file" type="file" accept="application/json" hidden />
+          </div>
+        </div>
+        <div id="sheet-list" class="sheet-list" aria-label="Saved characters"></div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Character sheet editor</p>
+            <h2 id="sheet-title">No character selected</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="save-btn" type="button">Save</button>
+            <button id="export-btn" type="button">Export JSON</button>
+          </div>
+        </header>
+
+        <div id="status-message" class="status" aria-live="polite"></div>
+        <form id="sheet-form" class="sheet-form"></form>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
