@@ -12,6 +12,7 @@ const sectionDefinitions = [
   { key: "attacks", label: "Attacks", fullWidth: false },
   { key: "defenses", label: "Defenses", fullWidth: false },
   { key: "note-entries", label: "Notes", fullWidth: false },
+  { key: "cypher-entries", label: "Cyphers", fullWidth: false },
 ];
 
 const listDefinitions = {
@@ -61,6 +62,14 @@ const listDefinitions = {
     title: "Note",
     fields: [
       { key: "title", label: "Name" },
+      { key: "note", label: "Note", kind: "textarea" },
+    ],
+  },
+  cypherEntries: {
+    title: "Cypher",
+    fields: [
+      { key: "title", label: "Name" },
+      { key: "level", label: "Level" },
       { key: "note", label: "Note", kind: "textarea" },
     ],
   },
@@ -134,7 +143,7 @@ function createBlankSheet() {
     flaws: "",
     connections: "",
     recoveryOptions: { action: false, tenMinutes: false, oneHour: false, tenHours: false },
-    damageTrackSelection: "",
+    damageTrackSelection: "healthy",
     powerShifts: [],
     powers: [],
     skills: [],
@@ -142,6 +151,7 @@ function createBlankSheet() {
     attacks: [],
     defenses: [],
     noteEntries: [],
+    cypherEntries: [],
     viewSettings: {
       sectionOrder: sectionDefinitions.map((section) => section.key),
       collapsedSections: {},
@@ -228,11 +238,8 @@ function bindEvents() {
     }
 
     if (target.matches("[data-damage-option]")) {
-      const value = target.dataset.damageOption;
-      document.querySelectorAll("[data-damage-option]").forEach((option) => {
-        if (option !== target) option.checked = false;
-      });
-      activeSheet.damageTrackSelection = target.checked ? value : "";
+      if (!target.checked) return;
+      activeSheet.damageTrackSelection = target.dataset.damageOption;
       persistCurrentSheet();
     }
   });
@@ -248,6 +255,13 @@ function bindEvents() {
     if (addButton) {
       const listKey = addButton.dataset.list;
       addListItem(listKey);
+      return;
+    }
+
+    const collapseAllButton = event.target.closest("[data-action='collapse-all']");
+    if (collapseAllButton) {
+      const listKey = collapseAllButton.dataset.list;
+      collapseAllListCards(listKey);
       return;
     }
 
@@ -396,7 +410,8 @@ function renderEditor() {
   });
 
   document.querySelectorAll("[data-damage-option]").forEach((element) => {
-    element.checked = activeSheet?.damageTrackSelection === element.dataset.damageOption;
+    const selectedValue = activeSheet?.damageTrackSelection || "healthy";
+    element.checked = selectedValue === element.dataset.damageOption;
   });
 
   syncPortraitPreview();
@@ -439,14 +454,11 @@ function buildFormMarkup() {
               <label><span>Focus</span><input data-field="focus" type="text" /></label>
             </div>
             <div class="field-divider"></div>
-            <div class="grid three-up compact-grid">
+            <div class="grid four-up compact-grid identity-inline-grid">
               <label><span>Tier</span><input data-field="tier" type="number" min="1" max="10" /></label>
               <label><span>Effort</span><input data-field="effort" type="number" min="0" max="6" /></label>
               <label><span>XP</span><input data-field="xp" type="number" min="0" /></label>
-            </div>
-            <div class="grid three-up compact-grid">
               <label><span>Armor</span><input data-field="armor" type="number" min="0" /></label>
-              <label><span>Speed</span><input data-field="speedValue" type="text" /></label>
             </div>
             <div class="grid two-up compact-grid">
               <label><span>Background</span><textarea data-field="background" rows="4"></textarea></label>
@@ -491,10 +503,10 @@ function buildFormMarkup() {
               <div class="recovery-card">
                 <h4>Injury</h4>
                 <div class="checkbox-list">
-                  <label class="checkbox-item" title="Healthy: no damage has been taken."><input type="checkbox" data-damage-option="healthy" /><span>Healthy</span></label>
-                  <label class="checkbox-item" title="Impaired: the character is carrying damage and is less effective."><input type="checkbox" data-damage-option="impaired" /><span>Impaired</span></label>
-                  <label class="checkbox-item" title="Debilitated: the character is severely harmed and may be incapacitated."><input type="checkbox" data-damage-option="debilitated" /><span>Debilitated</span></label>
-                  <label class="checkbox-item" title="Dead: the character has been taken out of the scene."><input type="checkbox" data-damage-option="dead" /><span>Dead</span></label>
+                  <label class="checkbox-item" title="Healthy: no damage has been taken."><input type="radio" name="damage-track" data-damage-option="healthy" /><span>Healthy</span></label>
+                  <label class="checkbox-item" title="Impaired: the character is carrying damage and is less effective."><input type="radio" name="damage-track" data-damage-option="impaired" /><span>Impaired</span></label>
+                  <label class="checkbox-item" title="Debilitated: the character is severely harmed and may be incapacitated."><input type="radio" name="damage-track" data-damage-option="debilitated" /><span>Debilitated</span></label>
+                  <label class="checkbox-item" title="Dead: the character has been taken out of the scene."><input type="radio" name="damage-track" data-damage-option="dead" /><span>Dead</span></label>
                 </div>
               </div>
               <div class="recovery-card">
@@ -553,8 +565,8 @@ function buildFormMarkup() {
       `;
     }
 
-    const listKey = key === "power-shifts" ? "powerShifts" : key === "note-entries" ? "noteEntries" : key;
-    const addLabel = key === "power-shifts" ? "Add shift" : key === "powers" ? "Add power" : key === "skills" ? "Add skill" : key === "equipment" ? "Add item" : key === "attacks" ? "Add attack" : key === "note-entries" ? "Add note" : "Add defense";
+    const listKey = key === "power-shifts" ? "powerShifts" : key === "note-entries" ? "noteEntries" : key === "cypher-entries" ? "cypherEntries" : key;
+    const addLabel = key === "power-shifts" ? "Add shift" : key === "powers" ? "Add power" : key === "skills" ? "Add skill" : key === "equipment" ? "Add item" : key === "attacks" ? "Add attack" : key === "note-entries" ? "Add note" : key === "cypher-entries" ? "Add cypher" : "Add defense";
     return `
       <section class="${panelClass}${collapsedClass} list-panel" data-panel-section="${key}">
         <div class="section-heading draggable-title" draggable="true">
@@ -563,6 +575,7 @@ function buildFormMarkup() {
             <span class="toggle-indicator">▾</span>
           </button>
           <div class="section-actions">
+            <button type="button" data-action="collapse-all" data-list="${listKey}">Collapse all</button>
             <button type="button" data-action="add" data-list="${listKey}">${addLabel}</button>
           </div>
         </div>
@@ -583,7 +596,7 @@ function renderListSection(listKey) {
 
   container.innerHTML = items.length
     ? items.map((item, index) => {
-        const titleField = listKey === "noteEntries" ? "title" : "name";
+        const titleField = listKey === "noteEntries" || listKey === "cypherEntries" ? "title" : "name";
         const cardTitle = item[titleField]?.trim() || `${definition.title} ${index + 1}`;
         const collapsedClass = item.collapsed ? " collapsed" : "";
         const expanded = item.collapsed ? "false" : "true";
@@ -625,7 +638,7 @@ function renderListSection(listKey) {
 function addListItem(listKey) {
   if (!activeSheet) return;
   if (!activeSheet[listKey]) activeSheet[listKey] = [];
-  const sectionKey = listKey === "powerShifts" ? "power-shifts" : listKey === "noteEntries" ? "note-entries" : listKey;
+  const sectionKey = listKey === "powerShifts" ? "power-shifts" : listKey === "noteEntries" ? "note-entries" : listKey === "cypherEntries" ? "cypher-entries" : listKey;
   const newIndex = activeSheet[listKey].length;
   activeSheet[listKey].push(getEmptyListItem(listKey));
   ensureViewSettings();
@@ -633,6 +646,13 @@ function addListItem(listKey) {
   pendingFocusCard = { listKey, index: newIndex };
   persistCurrentSheet();
   renderEditor();
+}
+
+function collapseAllListCards(listKey) {
+  if (!activeSheet?.[listKey]) return;
+  activeSheet[listKey] = activeSheet[listKey].map((item) => ({ ...item, collapsed: true }));
+  persistCurrentSheet();
+  renderListSection(listKey);
 }
 
 function toggleListCard(listKey, index) {
@@ -776,7 +796,7 @@ function syncListCardTitle(listKey, index) {
   const titleElement = card.querySelector(".list-card-title");
   const item = activeSheet?.[listKey]?.[index];
   if (!titleElement || !item) return;
-  const titleField = listKey === "noteEntries" ? "title" : "name";
+  const titleField = listKey === "noteEntries" || listKey === "cypherEntries" ? "title" : "name";
   const titleValue = item[titleField]?.trim() || `${listDefinitions[listKey].title} ${index + 1}`;
   titleElement.textContent = titleValue;
 }
@@ -891,6 +911,7 @@ function normalizeSheet(value) {
   sheet.attacks = Array.isArray(value.attacks) ? value.attacks : [];
   sheet.defenses = Array.isArray(value.defenses) ? value.defenses : [];
   sheet.noteEntries = Array.isArray(value.noteEntries) ? value.noteEntries : [];
+  sheet.cypherEntries = Array.isArray(value.cypherEntries) ? value.cypherEntries : [];
   return sheet;
 }
 
