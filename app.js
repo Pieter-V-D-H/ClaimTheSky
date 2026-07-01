@@ -180,6 +180,18 @@ function initialize() {
 }
 
 function bindEvents() {
+  const sidebar = document.querySelector(".sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle-btn");
+
+  if (sidebar && sidebarToggle) {
+    sidebarToggle.addEventListener("click", () => {
+      const collapsed = sidebar.classList.toggle("is-collapsed");
+      const appShell = document.querySelector(".app-shell");
+      appShell?.classList.toggle("is-sidebar-collapsed", collapsed);
+      sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+    });
+  }
+
   document.getElementById("new-sheet-btn").addEventListener("click", createNewSheet);
   document.getElementById("save-btn").addEventListener("click", () => {
     persistCurrentSheet();
@@ -245,6 +257,10 @@ function bindEvents() {
       activeSheet[field] = target.value;
       persistCurrentSheet();
       syncSectionSummaries();
+      const title = document.getElementById("sheet-title");
+      if (title && field === "name") {
+        title.textContent = activeSheet.name || "No character selected";
+      }
       if (target.matches("textarea")) {
         requestAnimationFrame(() => syncTextarea(target));
       }
