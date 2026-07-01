@@ -319,7 +319,10 @@ function bindEvents() {
   });
 
   document.addEventListener("dragstart", (event) => {
-    const cardHeader = event.target.closest(".list-card-header.draggable-title");
+    const dragHandle = event.target.closest("[data-drag-handle]");
+    if (!dragHandle) return;
+
+    const cardHeader = dragHandle.closest(".list-card-header");
     if (cardHeader) {
       const card = cardHeader.closest(".list-card");
       if (card) {
@@ -336,7 +339,7 @@ function bindEvents() {
       return;
     }
 
-    const panelTitle = event.target.closest(".section-heading.draggable-title");
+    const panelTitle = dragHandle.closest(".section-heading");
     if (panelTitle) {
       const panel = panelTitle.closest(".panel");
       if (panel) {
@@ -542,8 +545,9 @@ function buildFormMarkup() {
     if (key === "identity") {
       return `
         <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
-          <div class="section-heading draggable-title" draggable="true">
+          <div class="section-heading">
             <div class="section-title-row">
+              <button class="drag-handle" type="button" data-drag-handle="true" aria-label="Drag section" draggable="true">⋮⋮</button>
               <label class="section-color-picker" title="Choose section color">
                 <input type="color" data-section-color-input="${key}" />
                 <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
@@ -583,8 +587,9 @@ function buildFormMarkup() {
     if (key === "stats") {
       return `
         <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
-          <div class="section-heading draggable-title" draggable="true">
+          <div class="section-heading">
             <div class="section-title-row">
+              <button class="drag-handle" type="button" data-drag-handle="true" aria-label="Drag section" draggable="true">⋮⋮</button>
               <label class="section-color-picker" title="Choose section color">
                 <input type="color" data-section-color-input="${key}" />
                 <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
@@ -610,8 +615,9 @@ function buildFormMarkup() {
     if (key === "recovery") {
       return `
         <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
-          <div class="section-heading draggable-title" draggable="true">
+          <div class="section-heading">
             <div class="section-title-row">
+              <button class="drag-handle" type="button" data-drag-handle="true" aria-label="Drag section" draggable="true">⋮⋮</button>
               <label class="section-color-picker" title="Choose section color">
                 <input type="color" data-section-color-input="${key}" />
                 <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
@@ -656,8 +662,9 @@ function buildFormMarkup() {
     if (key === "details") {
       return `
         <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
-          <div class="section-heading draggable-title" draggable="true">
+          <div class="section-heading">
             <div class="section-title-row">
+              <button class="drag-handle" type="button" data-drag-handle="true" aria-label="Drag section" draggable="true">⋮⋮</button>
               <label class="section-color-picker" title="Choose section color">
                 <input type="color" data-section-color-input="${key}" />
                 <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
@@ -700,8 +707,9 @@ function buildFormMarkup() {
     const addLabel = key === "power-shifts" ? "Add shift" : key === "powers" ? "Add ability" : key === "skills" ? "Add skill" : key === "equipment" ? "Add item" : key === "attacks" ? "Add attack" : key === "note-entries" ? "Add note" : key === "cypher-entries" ? "Add cypher" : "Add defense";
     return `
       <section class="${panelClass}${collapsedClass} list-panel" data-panel-section="${key}"${sectionStyle}>
-        <div class="section-heading draggable-title" draggable="true">
+        <div class="section-heading">
           <div class="section-title-row">
+            <button class="drag-handle" type="button" data-drag-handle="true" aria-label="Drag section" draggable="true">⋮⋮</button>
             <label class="section-color-picker" title="Choose section color">
               <input type="color" data-section-color-input="${key}" />
               <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
@@ -740,7 +748,8 @@ function renderListSection(listKey) {
         const collapsedAnnotation = getCollapsedCardAnnotation(listKey, item);
         return `
           <article class="list-card${collapsedClass}" data-list-key="${listKey}" data-index="${index}">
-            <div class="list-card-header draggable-title" draggable="true">
+            <div class="list-card-header">
+              <button class="drag-handle" type="button" data-drag-handle="true" aria-label="Drag card" draggable="true">⋮⋮</button>
               <button class="list-card-toggle" type="button" data-list-card-toggle="true" data-list="${listKey}" data-index="${index}" aria-expanded="${expanded}">
                 <span class="toggle-indicator">▾</span>
                 <span class="list-card-title">${escapeHtml(cardTitle)}</span>
