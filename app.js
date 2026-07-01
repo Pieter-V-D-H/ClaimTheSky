@@ -488,7 +488,7 @@ function getSectionPanelColors(sectionKey) {
   const pastelR = blend(r);
   const pastelG = blend(g);
   const pastelB = blend(b);
-  const start = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.24)`;
+  const start = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.45)`;
   const end = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.08)`;
   const overlay = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.16)`;
 
