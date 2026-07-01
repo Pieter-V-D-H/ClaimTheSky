@@ -225,6 +225,7 @@ function bindEvents() {
       const field = target.dataset.field;
       activeSheet[field] = target.value;
       persistCurrentSheet();
+      syncSectionSummaries();
       if (target.matches("textarea")) {
         requestAnimationFrame(() => syncTextarea(target));
       }
@@ -235,6 +236,7 @@ function bindEvents() {
       activeSheet.recoveryOptions = activeSheet.recoveryOptions || {};
       activeSheet.recoveryOptions[target.dataset.recoveryOption] = target.checked;
       persistCurrentSheet();
+      syncSectionSummaries();
       return;
     }
 
@@ -242,6 +244,7 @@ function bindEvents() {
       if (!target.checked) return;
       activeSheet.damageTrackSelection = target.dataset.damageOption;
       persistCurrentSheet();
+      syncSectionSummaries();
     }
   });
 
@@ -371,7 +374,12 @@ function renderSheetList() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `sheet-item${sheet.id === activeSheetId ? " active" : ""}`;
-    button.innerHTML = `<strong>${escapeHtml(sheet.name || "Untitled Character")}</strong><span>${escapeHtml(sheet.type || "No type entered")}</span>`;
+    const descriptor = sheet.descriptor?.trim();
+    const type = sheet.type?.trim();
+    const focus = sheet.focus?.trim();
+    const subtitleParts = [descriptor, type, focus].filter(Boolean);
+    const subtitle = subtitleParts.length ? `${descriptor || ""} ${type || ""}${focus ? ` who ${focus}` : ""}`.trim() : "No type entered";
+    button.innerHTML = `<strong>${escapeHtml(sheet.name || "Untitled Character")}</strong><span>${escapeHtml(subtitle)}</span>`;
     button.addEventListener("click", () => {
       activeSheetId = sheet.id;
       activeSheet = sheets.find((item) => item.id === sheet.id);
@@ -435,6 +443,7 @@ function buildFormMarkup() {
     const panelClass = `panel${definition.fullWidth ? " full-width" : " half-width"}`;
     const collapsedClass = activeSheet?.viewSettings?.collapsedSections?.[key] ? " collapsed" : "";
     const expanded = activeSheet?.viewSettings?.collapsedSections?.[key] ? "false" : "true";
+    const collapsedSummary = getSectionCollapsedSummary(key);
 
     if (key === "identity") {
       return `
@@ -442,6 +451,7 @@ function buildFormMarkup() {
           <div class="section-heading draggable-title" draggable="true">
             <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
               <h3>Identity & Overview</h3>
+              ${collapsedSummary ? `<span class="section-meta">${collapsedSummary}</span>` : ""}
               <span class="toggle-indicator">▾</span>
             </button>
           </div>
@@ -476,6 +486,7 @@ function buildFormMarkup() {
           <div class="section-heading draggable-title" draggable="true">
             <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
               <h3>Stats & Pools</h3>
+              ${collapsedSummary ? `<span class="section-meta">${collapsedSummary}</span>` : ""}
               <span class="toggle-indicator">▾</span>
             </button>
           </div>
@@ -496,6 +507,7 @@ function buildFormMarkup() {
           <div class="section-heading draggable-title" draggable="true">
             <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
               <h3>Injury and Recovery</h3>
+              ${collapsedSummary ? `<span class="section-meta">${collapsedSummary}</span>` : ""}
               <span class="toggle-indicator">▾</span>
             </button>
           </div>
@@ -636,6 +648,68 @@ function renderListSection(listKey) {
     : `<p>No ${definition.title.toLowerCase()} entries yet.</p>`;
 
   enhanceTextareas();
+}
+
+function getSectionCollapsedSummary(sectionKey) {
+  if (!activeSheet) return "";
+
+  if (sectionKey === "identity") {
+    const parts = [];
+    if (activeSheet.tier !== "" && activeSheet.tier !== null && activeSheet.tier !== undefined) parts.push(`T ${activeSheet.tier}`);
+    if (activeSheet.effort !== "" && activeSheet.effort !== null && activeSheet.effort !== undefined) parts.push(`E ${activeSheet.effort}`);
+    if (activeSheet.xp !== "" && activeSheet.xp !== null && activeSheet.xp !== undefined) parts.push(`XP ${activeSheet.xp}`);
+    if (activeSheet.armor !== "" && activeSheet.armor !== null && activeSheet.armor !== undefined) parts.push(`A ${activeSheet.armor}`);
+    return parts.join(" • ");
+  }
+
+  if (sectionKey === "stats") {
+    const parts = [];
+    if (activeSheet.mightPool !== "" && activeSheet.mightPool !== null && activeSheet.mightPool !== undefined) {
+      const edge = activeSheet.mightEdge !== "" && activeSheet.mightEdge !== null && activeSheet.mightEdge !== undefined ? ` (E ${activeSheet.mightEdge})` : "";
+      const maxPool = activeSheet.mightMax !== "" && activeSheet.mightMax !== null && activeSheet.mightMax !== undefined ? ` / MP ${activeSheet.mightMax}` : "";
+      parts.push(`Might P ${activeSheet.mightPool}${maxPool}${edge}`);
+    }
+    if (activeSheet.speedPool !== "" && activeSheet.speedPool !== null && activeSheet.speedPool !== undefined) {
+      const edge = activeSheet.speedEdge !== "" && activeSheet.speedEdge !== null && activeSheet.speedEdge !== undefined ? ` (E ${activeSheet.speedEdge})` : "";
+      const maxPool = activeSheet.speedMax !== "" && activeSheet.speedMax !== null && activeSheet.speedMax !== undefined ? ` / MP ${activeSheet.speedMax}` : "";
+      parts.push(`Speed P ${activeSheet.speedPool}${maxPool}${edge}`);
+    }
+    if (activeSheet.intellectPool !== "" && activeSheet.intellectPool !== null && activeSheet.intellectPool !== undefined) {
+      const edge = activeSheet.intellectEdge !== "" && activeSheet.intellectEdge !== null && activeSheet.intellectEdge !== undefined ? ` (E ${activeSheet.intellectEdge})` : "";
+      const maxPool = activeSheet.intellectMax !== "" && activeSheet.intellectMax !== null && activeSheet.intellectMax !== undefined ? ` / MP ${activeSheet.intellectMax}` : "";
+      parts.push(`Intellect P ${activeSheet.intellectPool}${maxPool}${edge}`);
+    }
+    return parts.join(" • ");
+  }
+
+  if (sectionKey === "recovery") {
+    const injury = activeSheet.damageTrackSelection || "healthy";
+    const injuryLabel = injury.charAt(0).toUpperCase() + injury.slice(1);
+    const optionMeta = [
+      { key: "action", label: "A", checked: Boolean(activeSheet.recoveryOptions?.action) },
+      { key: "tenMinutes", label: "TM", checked: Boolean(activeSheet.recoveryOptions?.tenMinutes) },
+      { key: "oneHour", label: "OH", checked: Boolean(activeSheet.recoveryOptions?.oneHour) },
+      { key: "tenHours", label: "TH", checked: Boolean(activeSheet.recoveryOptions?.tenHours) },
+    ];
+    const recoverySummary = optionMeta.map((option) => `${option.label}${option.checked ? " ⬩✕" : " ☐"}`).join(" • ");
+    return `${injuryLabel} • ${recoverySummary}`;
+  }
+
+  return "";
+}
+
+function syncSectionSummaries() {
+  const form = document.getElementById("sheet-form");
+  if (!form) return;
+
+  form.querySelectorAll(".panel").forEach((panel) => {
+    const sectionKey = panel.dataset.panelSection;
+    const summaryNode = panel.querySelector(".section-meta");
+    if (!summaryNode) return;
+    const summary = getSectionCollapsedSummary(sectionKey);
+    summaryNode.textContent = summary;
+    summaryNode.style.display = summary ? "inline-flex" : "none";
+  });
 }
 
 function getCollapsedCardAnnotation(listKey, item) {

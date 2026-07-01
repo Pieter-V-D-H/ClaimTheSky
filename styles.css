@@ -193,7 +193,33 @@ label { display: flex; flex-direction: column; gap: 0.25rem; color: var(--muted)
   border-radius: 12px;
   padding: 0.3rem 0.35rem;
 }
-.checkbox-item input { margin: 0; }
+.checkbox-item input { margin: 0; accent-color: var(--accent); }
+.checkbox-item input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 0.2rem;
+  background: rgba(255,255,255,0.06);
+  display: inline-grid;
+  place-content: center;
+  flex-shrink: 0;
+}
+.checkbox-item input[type='checkbox']::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+}
+.checkbox-item input[type='checkbox']:checked::after {
+  content: "✕";
+  color: var(--accent);
+  transform: scale(1);
+  font-size: 0.7rem;
+  line-height: 1;
+}
 .recovery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
 .recovery-card {
   padding: 0.4rem;
@@ -285,7 +311,7 @@ textarea.expanded { max-height: none; overflow: visible; }
 .list-card:not(.collapsed) .list-card-body { max-height: 1200px; opacity: 1; }
 .list-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; gap: 0.35rem; }
 .list-card-toggle { display: flex; align-items: center; gap: 0.25rem; background: transparent; padding: 0; color: var(--text); text-align: left; }
-.list-card-meta {
+.list-card-meta, .section-meta {
   display: inline-flex;
   align-items: center;
   margin-left: 0.35rem;
@@ -298,6 +324,12 @@ textarea.expanded { max-height: none; overflow: visible; }
   font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
+}
+.section-meta {
+  margin-left: 0.5rem;
+  max-width: min(100%, 24rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .list-card-toggle .toggle-indicator { transition: transform 0.2s ease; }
 .list-card.collapsed .list-card-toggle .toggle-indicator { transform: rotate(-90deg); }
