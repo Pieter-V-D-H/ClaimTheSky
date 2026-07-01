@@ -399,6 +399,32 @@ textarea.expanded { max-height: none; overflow: visible; }
     border-right: 0;
     border-radius: 20px;
   }
+  .section-heading {
+    min-height: 2.8rem;
+  }
+  .section-title-row {
+    min-height: 2.4rem;
+  }
+  .section-toggle,
+  .list-card-toggle {
+    min-height: 2.6rem;
+    width: 100%;
+    padding: 0.45rem 0.55rem;
+    border-radius: 14px;
+  }
+  .section-toggle {
+    align-items: center;
+  }
+  .list-card-header {
+    align-items: stretch;
+  }
+  .list-card-toggle {
+    justify-content: flex-start;
+  }
+  .remove-btn {
+    min-height: 2.6rem;
+    padding: 0.35rem 0.5rem;
+  }
   .sidebar.is-collapsed {
     padding: 0.35rem 0.4rem;
   }
