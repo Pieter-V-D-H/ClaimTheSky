@@ -5,14 +5,14 @@ const sectionDefinitions = [
   { key: "stats", label: "Stats & Pools", fullWidth: true },
   { key: "recovery", label: "Injury and Recovery", fullWidth: true },
   { key: "details", label: "Character Details", fullWidth: true },
-  { key: "power-shifts", label: "Power Shifts", fullWidth: false },
-  { key: "powers", label: "Powers", fullWidth: false },
   { key: "skills", label: "Skills", fullWidth: false },
-  { key: "equipment", label: "Equipment", fullWidth: false },
+  { key: "powers", label: "Special Abilities", fullWidth: false },
   { key: "attacks", label: "Attacks", fullWidth: false },
   { key: "defenses", label: "Defenses", fullWidth: false },
-  { key: "note-entries", label: "Notes", fullWidth: false },
+  { key: "equipment", label: "Equipment", fullWidth: false },
   { key: "cypher-entries", label: "Cyphers", fullWidth: false },
+  { key: "power-shifts", label: "Power Shifts", fullWidth: false },
+  { key: "note-entries", label: "Notes", fullWidth: false },
 ];
 
 const listDefinitions = {
@@ -77,6 +77,7 @@ const listDefinitions = {
     title: "Defense",
     fields: [
       { key: "name", label: "Name" },
+      { key: "rank", label: "Rank" },
       { key: "details", label: "Details", kind: "textarea" },
     ],
   },
@@ -566,7 +567,7 @@ function buildFormMarkup() {
     }
 
     const listKey = key === "power-shifts" ? "powerShifts" : key === "note-entries" ? "noteEntries" : key === "cypher-entries" ? "cypherEntries" : key;
-    const addLabel = key === "power-shifts" ? "Add shift" : key === "powers" ? "Add power" : key === "skills" ? "Add skill" : key === "equipment" ? "Add item" : key === "attacks" ? "Add attack" : key === "note-entries" ? "Add note" : key === "cypher-entries" ? "Add cypher" : "Add defense";
+    const addLabel = key === "power-shifts" ? "Add shift" : key === "powers" ? "Add ability" : key === "skills" ? "Add skill" : key === "equipment" ? "Add item" : key === "attacks" ? "Add attack" : key === "note-entries" ? "Add note" : key === "cypher-entries" ? "Add cypher" : "Add defense";
     return `
       <section class="${panelClass}${collapsedClass} list-panel" data-panel-section="${key}">
         <div class="section-heading draggable-title" draggable="true">
@@ -600,12 +601,14 @@ function renderListSection(listKey) {
         const cardTitle = item[titleField]?.trim() || `${definition.title} ${index + 1}`;
         const collapsedClass = item.collapsed ? " collapsed" : "";
         const expanded = item.collapsed ? "false" : "true";
+        const collapsedAnnotation = getCollapsedCardAnnotation(listKey, item);
         return `
           <article class="list-card${collapsedClass}" data-list-key="${listKey}" data-index="${index}">
             <div class="list-card-header draggable-title" draggable="true">
               <button class="list-card-toggle" type="button" data-list-card-toggle="true" data-list="${listKey}" data-index="${index}" aria-expanded="${expanded}">
                 <span class="toggle-indicator">▾</span>
                 <span class="list-card-title">${escapeHtml(cardTitle)}</span>
+                ${collapsedAnnotation ? `<span class="list-card-meta">${collapsedAnnotation}</span>` : ""}
               </button>
               <button class="remove-btn" type="button" data-action="remove" data-list="${listKey}" data-index="${index}">Remove</button>
             </div>
@@ -633,6 +636,36 @@ function renderListSection(listKey) {
     : `<p>No ${definition.title.toLowerCase()} entries yet.</p>`;
 
   enhanceTextareas();
+}
+
+function getCollapsedCardAnnotation(listKey, item) {
+  if (!item?.collapsed) return "";
+
+  if (listKey === "skills") {
+    return item.rank ? `Rank ${escapeHtml(item.rank)}` : "";
+  }
+  if (listKey === "powers") {
+    return item.cost ? `Cost ${escapeHtml(item.cost)}` : "";
+  }
+  if (listKey === "equipment") {
+    return item.quantity ? `(x${escapeHtml(item.quantity)})` : "";
+  }
+  if (listKey === "attacks") {
+    const range = item.range?.trim();
+    const damage = item.damage?.trim();
+    if (range || damage) {
+      return [range ? `Range ${range}` : "", damage ? `Damage ${damage}` : ""].filter(Boolean).join(" • ");
+    }
+    return "";
+  }
+  if (listKey === "defenses") {
+    return item.rank ? `Rank ${escapeHtml(item.rank)}` : "";
+  }
+  if (listKey === "cypherEntries") {
+    return item.level ? `Level ${escapeHtml(item.level)}` : "";
+  }
+
+  return "";
 }
 
 function addListItem(listKey) {

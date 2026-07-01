@@ -206,7 +206,12 @@ label { display: flex; flex-direction: column; gap: 0.25rem; color: var(--muted)
 .recovery-roll-label { flex: 0 0 auto; min-width: 0; }
 .recovery-roll-label span { white-space: nowrap; }
 .recovery-roll-input { flex: 0 0 45%; max-width: 45%; }
-.portrait-layout { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; gap: 0.4rem; align-items: start; }
+.portrait-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+}
 .portrait-card {
   padding: 0.4rem;
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -217,8 +222,8 @@ label { display: flex; flex-direction: column; gap: 0.25rem; color: var(--muted)
 }
 .portrait-preview-shell {
   position: relative;
-  min-height: 170px;
-  max-height: 170px;
+  aspect-ratio: 1 / 1;
+  width: 100%;
   border-radius: 14px;
   border: 3px solid rgba(77, 196, 255, 0.16);
   background: rgba(8, 14, 24, 0.55);
@@ -228,7 +233,13 @@ label { display: flex; flex-direction: column; gap: 0.25rem; color: var(--muted)
   overflow: hidden;
   padding: 0.3rem;
 }
-.portrait-preview { width: calc(100% - 0.6rem); height: calc(100% - 0.6rem); object-fit: cover; display: block; border-radius: 10px; }
+.portrait-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+}
 .portrait-preview.is-hidden { display: none; }
 .portrait-placeholder { color: var(--muted); font-size: 0.9rem; }
 .portrait-upload { display: flex; flex-direction: column; gap: 0.2rem; color: var(--muted); font-size: 0.82rem; }
@@ -274,6 +285,20 @@ textarea.expanded { max-height: none; overflow: visible; }
 .list-card:not(.collapsed) .list-card-body { max-height: 1200px; opacity: 1; }
 .list-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; gap: 0.35rem; }
 .list-card-toggle { display: flex; align-items: center; gap: 0.25rem; background: transparent; padding: 0; color: var(--text); text-align: left; }
+.list-card-meta {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid rgba(77, 196, 255, 0.24);
+  background: rgba(77, 196, 255, 0.12);
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
 .list-card-toggle .toggle-indicator { transition: transform 0.2s ease; }
 .list-card.collapsed .list-card-toggle .toggle-indicator { transform: rotate(-90deg); }
 .list-card-body { overflow: hidden; transition: max-height 0.28s ease, opacity 0.28s ease, padding 0.28s ease; }
@@ -286,5 +311,21 @@ textarea.expanded { max-height: none; overflow: visible; }
   color: #ffdce3;
   padding: 0.2rem 0.35rem;
 }
-@media (max-width: 1080px) { .app-shell { grid-template-columns: 1fr; } .sidebar { border-right: 0; border-bottom: 1px solid var(--border); } }
-@media (max-width: 760px) { .sheet-form,.three-up,.two-up,.four-up,.stats-stack,.list-grid,.recovery-grid { grid-template-columns: 1fr; } .panel.full-width { grid-column: auto; } .topbar { flex-direction: column; align-items: flex-start; } .field--wide,.field--compact,.identity-inline-grid label { grid-column: auto; max-width: none; } }
+@media (max-width: 1080px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--border); }
+  .portrait-layout { grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .sheet-form,.three-up,.two-up,.four-up,.stats-stack,.list-grid,.recovery-grid { grid-template-columns: 1fr; }
+  .panel.full-width { grid-column: auto; }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .field--wide,.field--compact,.identity-inline-grid label { grid-column: auto; max-width: none; }
+  .portrait-layout { grid-template-columns: 1fr; }
+  .portrait-card { width: 100%; }
+  .portrait-preview-shell { max-width: 220px; margin: 0 auto; }
+  .sidebar-actions,.topbar-actions,.section-actions { width: 100%; }
+  .section-actions { justify-content: flex-end; }
+  .sheet-item, .sheet-delete { width: 100%; }
+  .sheet-entry { flex-direction: column; }
+}
