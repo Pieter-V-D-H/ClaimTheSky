@@ -157,6 +157,7 @@ function createBlankSheet() {
       sectionOrder: sectionDefinitions.map((section) => section.key),
       collapsedSections: {},
     },
+    sectionColors: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -190,6 +191,21 @@ function bindEvents() {
 
   document.addEventListener("input", (event) => {
     const target = event.target;
+    if (target.matches("[data-section-color-input]")) {
+      activeSheet.sectionColors = activeSheet.sectionColors || {};
+      activeSheet.sectionColors[target.dataset.sectionColorInput] = target.value;
+      persistCurrentSheet();
+      const swatch = target.closest(".section-color-picker")?.querySelector(".section-color-swatch");
+      if (swatch) {
+        swatch.style.setProperty("--section-color", target.value);
+      }
+      const panel = target.closest(".panel");
+      if (panel) {
+        applySectionColorStyle(panel, target.dataset.sectionColorInput);
+      }
+      return;
+    }
+
     if (target.matches("[data-portrait-upload]")) {
       const file = target.files?.[0];
       if (!file) {
@@ -216,6 +232,9 @@ function bindEvents() {
         persistCurrentSheet();
         if (field === "name" || field === "title") {
           syncListCardTitle(list, Number(index));
+        }
+        if (target.matches("textarea")) {
+          requestAnimationFrame(() => syncTextarea(target));
         }
       }
       return;
@@ -424,14 +443,72 @@ function renderEditor() {
   });
 
   syncPortraitPreview();
+  syncSectionColorPickers();
 
   Object.keys(listDefinitions).forEach((listKey) => {
     renderListSection(listKey);
   });
 
+  syncSectionSummaries();
   applyViewSettings();
   enhanceTextareas();
   requestAnimationFrame(() => focusPendingCard());
+}
+
+function getSectionPanelColors(sectionKey) {
+  const color = activeSheet?.sectionColors?.[sectionKey] || "#8fa7c8";
+
+  const hex = color.replace("#", "");
+  const normalized = hex.length === 3 ? hex.split("").map((part) => part + part).join("") : hex;
+  const bigint = parseInt(normalized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+
+  const blend = (channel) => Math.round(channel * 0.68 + 255 * 0.32);
+  const pastelR = blend(r);
+  const pastelG = blend(g);
+  const pastelB = blend(b);
+  const start = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.24)`;
+  const end = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.08)`;
+  const overlay = `rgba(${pastelR}, ${pastelG}, ${pastelB}, 0.16)`;
+
+  return {
+    panelBg: `linear-gradient(145deg, ${start} 0%, ${end} 48%, rgba(8, 15, 27, 0.95) 100%)`,
+    beforeBg: `linear-gradient(135deg, ${overlay} 0%, transparent 55%, rgba(255,255,255,0.04) 100%)`,
+  };
+}
+
+function getSectionPanelStyle(sectionKey) {
+  const colors = getSectionPanelColors(sectionKey);
+  return `style="--section-panel-bg:${colors.panelBg}; --section-before-bg:${colors.beforeBg};"`;
+}
+
+function applySectionColorStyle(panel, sectionKey) {
+  if (!panel) return;
+  const colors = getSectionPanelColors(sectionKey);
+  panel.style.setProperty("--section-panel-bg", colors.panelBg);
+  panel.style.setProperty("--section-before-bg", colors.beforeBg);
+}
+
+function getSectionColorValue(sectionKey) {
+  return activeSheet?.sectionColors?.[sectionKey] || "#8fa7c8";
+}
+
+function syncSectionColorPickers() {
+  document.querySelectorAll("[data-section-color-input]").forEach((input) => {
+    const sectionKey = input.dataset.sectionColorInput;
+    const swatch = input.closest(".section-color-picker")?.querySelector(".section-color-swatch");
+    const value = getSectionColorValue(sectionKey);
+    input.value = value;
+    if (swatch) {
+      swatch.style.setProperty("--section-color", value);
+    }
+    const panel = input.closest(".panel");
+    if (panel) {
+      applySectionColorStyle(panel, sectionKey);
+    }
+  });
 }
 
 function buildFormMarkup() {
@@ -444,16 +521,23 @@ function buildFormMarkup() {
     const collapsedClass = activeSheet?.viewSettings?.collapsedSections?.[key] ? " collapsed" : "";
     const expanded = activeSheet?.viewSettings?.collapsedSections?.[key] ? "false" : "true";
     const collapsedSummary = getSectionCollapsedSummary(key);
+    const sectionStyle = getSectionPanelStyle(key);
 
     if (key === "identity") {
       return `
-        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}">
+        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
           <div class="section-heading draggable-title" draggable="true">
-            <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
-              <h3>Identity & Overview</h3>
-              ${collapsedSummary ? `<span class="section-meta">${collapsedSummary}</span>` : ""}
-              <span class="toggle-indicator">▾</span>
-            </button>
+            <div class="section-title-row">
+              <label class="section-color-picker" title="Choose section color">
+                <input type="color" data-section-color-input="${key}" />
+                <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
+              </label>
+              <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
+                <h3>Identity & Overview</h3>
+                <span class="section-meta"${collapsedSummary ? "" : ' style="display: none;"'}>${collapsedSummary || ""}</span>
+                <span class="toggle-indicator">▾</span>
+              </button>
+            </div>
           </div>
           <div class="section-content">
             <div class="grid three-up compact-grid">
@@ -482,13 +566,19 @@ function buildFormMarkup() {
 
     if (key === "stats") {
       return `
-        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}">
+        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
           <div class="section-heading draggable-title" draggable="true">
-            <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
-              <h3>Stats & Pools</h3>
-              ${collapsedSummary ? `<span class="section-meta">${collapsedSummary}</span>` : ""}
-              <span class="toggle-indicator">▾</span>
-            </button>
+            <div class="section-title-row">
+              <label class="section-color-picker" title="Choose section color">
+                <input type="color" data-section-color-input="${key}" />
+                <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
+              </label>
+              <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
+                <h3>Stats & Pools</h3>
+                <span class="section-meta"${collapsedSummary ? "" : ' style="display: none;"'}>${collapsedSummary || ""}</span>
+                <span class="toggle-indicator">▾</span>
+              </button>
+            </div>
           </div>
           <div class="section-content">
             <div class="stats-stack">
@@ -503,13 +593,19 @@ function buildFormMarkup() {
 
     if (key === "recovery") {
       return `
-        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}">
+        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
           <div class="section-heading draggable-title" draggable="true">
-            <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
-              <h3>Injury and Recovery</h3>
-              ${collapsedSummary ? `<span class="section-meta">${collapsedSummary}</span>` : ""}
-              <span class="toggle-indicator">▾</span>
-            </button>
+            <div class="section-title-row">
+              <label class="section-color-picker" title="Choose section color">
+                <input type="color" data-section-color-input="${key}" />
+                <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
+              </label>
+              <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
+                <h3>Injury and Recovery</h3>
+                <span class="section-meta"${collapsedSummary ? "" : ' style="display: none;"'}>${collapsedSummary || ""}</span>
+                <span class="toggle-indicator">▾</span>
+              </button>
+            </div>
           </div>
           <div class="section-content">
             <div class="recovery-grid">
@@ -543,12 +639,18 @@ function buildFormMarkup() {
 
     if (key === "details") {
       return `
-        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}">
+        <section class="${panelClass}${collapsedClass}" data-panel-section="${key}"${sectionStyle}>
           <div class="section-heading draggable-title" draggable="true">
-            <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
-              <h3>Character Details</h3>
-              <span class="toggle-indicator">▾</span>
-            </button>
+            <div class="section-title-row">
+              <label class="section-color-picker" title="Choose section color">
+                <input type="color" data-section-color-input="${key}" />
+                <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
+              </label>
+              <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
+                <h3>Character Details</h3>
+                <span class="toggle-indicator">▾</span>
+              </button>
+            </div>
           </div>
           <div class="section-content">
             <div class="portrait-layout">
@@ -581,12 +683,18 @@ function buildFormMarkup() {
     const listKey = key === "power-shifts" ? "powerShifts" : key === "note-entries" ? "noteEntries" : key === "cypher-entries" ? "cypherEntries" : key;
     const addLabel = key === "power-shifts" ? "Add shift" : key === "powers" ? "Add ability" : key === "skills" ? "Add skill" : key === "equipment" ? "Add item" : key === "attacks" ? "Add attack" : key === "note-entries" ? "Add note" : key === "cypher-entries" ? "Add cypher" : "Add defense";
     return `
-      <section class="${panelClass}${collapsedClass} list-panel" data-panel-section="${key}">
+      <section class="${panelClass}${collapsedClass} list-panel" data-panel-section="${key}"${sectionStyle}>
         <div class="section-heading draggable-title" draggable="true">
-          <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
-            <h3>${definition.label}</h3>
-            <span class="toggle-indicator">▾</span>
-          </button>
+          <div class="section-title-row">
+            <label class="section-color-picker" title="Choose section color">
+              <input type="color" data-section-color-input="${key}" />
+              <span class="section-color-swatch" style="--section-color: ${getSectionColorValue(key)}"></span>
+            </label>
+            <button class="section-toggle" type="button" data-toggle-panel="${key}" aria-expanded="${expanded}">
+              <h3>${definition.label}</h3>
+              <span class="toggle-indicator">▾</span>
+            </button>
+          </div>
           <div class="section-actions">
             <button type="button" data-action="collapse-all" data-list="${listKey}">Collapse all</button>
             <button type="button" data-action="add" data-list="${listKey}">${addLabel}</button>
@@ -939,6 +1047,8 @@ function enhanceTextareas() {
     shell.appendChild(textarea);
     shell.appendChild(toggle);
     textarea.dataset.expandReady = "true";
+    textarea.addEventListener("input", () => syncTextarea(textarea, toggle));
+    textarea.addEventListener("change", () => syncTextarea(textarea, toggle));
     syncTextarea(textarea, toggle);
   });
 }
