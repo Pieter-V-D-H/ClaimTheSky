@@ -386,7 +386,6 @@ textarea.expanded { max-height: none; overflow: visible; }
 }
 .section-meta {
   margin-left: 0.5rem;
-  max-width: min(100%, 24rem);
   overflow: hidden;
   text-overflow: ellipsis;
 }
